@@ -123,9 +123,12 @@ class Harness:
         self.bundle = Bundle.load(self.bundle_cfg.path)
 
     # ---- agents ------------------------------------------------------------------
-    def _history(self) -> Any:
+    def _capabilities(self) -> list[Any]:
+        from pydantic_ai.capabilities import ProcessHistory
+
         b = self.settings.budgets
-        return make_history_processor(b.context_window_tokens, b.collapse_after_turns, b.compact_at_fraction)
+        processor = make_history_processor(b.context_window_tokens, b.collapse_after_turns, b.compact_at_fraction)
+        return [ProcessHistory(processor)]
 
     def searcher(self) -> Any:
         if self._searcher is None:
@@ -136,7 +139,7 @@ class Harness:
                 deps_type=Deps,
                 output_type=SearchReport,
                 instructions=SEARCHER,
-                history_processors=[self._history()],
+                capabilities=self._capabilities(),
                 retries=self.settings.budgets.model_retries,
                 name="searcher",
             )
@@ -154,7 +157,7 @@ class Harness:
                 deps_type=Deps,
                 output_type=Answer,
                 instructions=planner_prompt(budgets.max_parallel_searchers, self.bundle.description),
-                history_processors=[self._history()],
+                capabilities=self._capabilities(),
                 retries=budgets.model_retries,
                 name="planner",
             )

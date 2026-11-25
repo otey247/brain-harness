@@ -12,15 +12,15 @@ dependencies = [
     "okf",
     "pydantic>=2.9",
     "pyyaml>=6",
-    "pydantic-ai-slim[anthropic,openai]>=1.0",
+    "pydantic-ai-slim[anthropic,openai]>=2.74,<3",
     "mcp>=2.0",
 ]
 
 [project.optional-dependencies]
 api = ["fastapi>=0.115", "uvicorn[standard]>=0.32"]
 otel = ["opentelemetry-sdk>=1.28", "opentelemetry-exporter-otlp-proto-http>=1.28"]
-google = ["pydantic-ai-slim[google]>=1.0"]
-bedrock = ["pydantic-ai-slim[bedrock]>=1.0"]
+google = ["pydantic-ai-slim[google]>=2.74,<3"]
+bedrock = ["pydantic-ai-slim[bedrock]>=2.74,<3"]
 vectors = ["sqlite-vec>=0.1.6"]
 write = ["okf[write]"]
 

@@ -1,4 +1,4 @@
-"""Context budgeting as a Pydantic AI history processor.
+"""Context budgeting as a Pydantic AI history processor (run through the ProcessHistory capability).
 
 Order of operations (cheapest and most lossless first):
 1. Collapse tool output older than ``collapse_after_turns`` model turns to a
