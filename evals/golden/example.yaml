@@ -1,0 +1,34 @@
+# Golden set for bundles/example. Grow this to 50-200 items from real questions
+# before trusting any comparison (design doc, Evals).
+#
+# kind: lookup | multi-hop | conflict | stale | absent
+# expect_paths: concepts a good answer must cite
+# expect_any: key phrases; at least one must appear in the answer (case-insensitive)
+# must_not_cite: concepts that must not be used as support
+bundle: example
+items:
+  - id: retrieval-decision
+    kind: conflict
+    question: What is our current approach to retrieval?
+    expect_paths: [decisions/2026-11-retrieval-grep-first.md]
+    must_not_cite: [decisions/2026-06-retrieval-vectors-first.md]
+    expect_any: [grep]
+  - id: who-owns-harness
+    kind: multi-hop
+    question: Who owns the project whose retrieval decision is grep first?
+    expect_paths: [projects/okf-harness.md]
+    expect_any: [Alex Chen]
+  - id: when-add-vectors
+    kind: lookup
+    question: When do we add a vector index?
+    expect_paths: [decisions/2026-11-retrieval-grep-first.md]
+    expect_any: [eval, gain]
+  - id: stale-topic
+    kind: stale
+    question: What does the bundle say about how agents search?
+    expect_paths: [topics/agentic-search.md]
+    expect_any: [stale, grep]
+  - id: absent-budget
+    kind: absent
+    question: What is the project's budget?
+    expect_abstain: true

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "brain-harness"
+version = "0.1.0"
+description = "Model-agnostic agentic search harness over Open Knowledge Format bundles"
+readme = "../../README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "okf",
+    "pydantic>=2.9",
+    "pyyaml>=6",
+    "pydantic-ai-slim[anthropic,openai]>=1.0",
+    "mcp>=2.0",
+]
+
+[project.optional-dependencies]
+api = ["fastapi>=0.115", "uvicorn[standard]>=0.32"]
+otel = ["opentelemetry-sdk>=1.28", "opentelemetry-exporter-otlp-proto-http>=1.28"]
+google = ["pydantic-ai-slim[google]>=1.0"]
+bedrock = ["pydantic-ai-slim[bedrock]>=1.0"]
+vectors = ["sqlite-vec>=0.1.6"]
+write = ["okf[write]"]
+
+[project.scripts]
+brain = "brain_harness.apps.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/brain_harness"]

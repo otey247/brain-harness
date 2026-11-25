@@ -1,0 +1,12 @@
+# Bundles the harness can search. Paths are relative to the working directory.
+default_bundle: example
+bundles:
+  example:
+    path: bundles/example
+    description: Sample bundle used by tests and the golden set.
+    # Providers allowed to see this bundle's content. Empty = any configured provider.
+    allowed_providers: []
+    # Writes go to a new git branch (brain/proposals/...) for human review.
+    writes_enabled: false
+scratch_dir: .brain/scratch
+run_log_dir: .brain/runs

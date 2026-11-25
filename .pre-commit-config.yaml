@@ -1,0 +1,15 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+  - repo: local
+    hooks:
+      - id: okf-validate
+        name: okf validate
+        entry: uv run okf validate bundles/example --strict
+        language: system
+        pass_filenames: false
+        files: ^bundles/
