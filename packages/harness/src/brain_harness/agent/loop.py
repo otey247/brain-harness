@@ -164,7 +164,6 @@ class Harness:
             _register_read_tools(agent, self.index is not None)
             searcher = self.searcher()
 
-            @agent.tool
             async def delegate(ctx: RunContext[Deps], sub_question: str) -> str:
                 """Hand one independent sub-question to a read-only searcher. Returns its cited findings."""
                 deps = ctx.deps
@@ -178,6 +177,11 @@ class Harness:
                 report: SearchReport = result.output
                 deps.reports.append(report)
                 return report.model_dump_json(indent=1)
+
+            # Annotations are strings under `from __future__ import annotations`; RunContext is
+            # imported locally, so give the schema builder the real objects.
+            delegate.__annotations__ = {"ctx": RunContext[Deps], "sub_question": str, "return": str}
+            agent.tool(delegate)
 
             self._planner = agent
         return self._planner
@@ -201,12 +205,12 @@ class Harness:
         try:
             result = await self.planner().run(question, deps=deps, usage_limits=limits)
             checked, report = verify_answer(self.bundle, result.output, self.now)
-            usage = result.usage()
+            usage = result.usage
             record.usage = {
                 "requests": usage.requests,
                 "input_tokens": usage.input_tokens,
                 "output_tokens": usage.output_tokens,
-                "tool_calls": getattr(usage, "tool_calls", None),
+                "tool_calls": usage.tool_calls,
             }
             record.answer = checked.model_dump()
             record.citation_validity = report.validity
