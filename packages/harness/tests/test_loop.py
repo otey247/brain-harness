@@ -12,6 +12,9 @@ from pydantic_ai.models.test import TestModel
 
 
 def test_loop_runs_and_logs(settings):
+    from brain_harness.config import Roles
+
+    settings.roles = Roles.model_validate({"planner": {"model": "test"}, "searcher": {"model": "test"}})
     harness = Harness(settings, now=NOW)
     model = TestModel(call_tools=["grep", "read"])
     agent = harness.planner()
