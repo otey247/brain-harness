@@ -1,0 +1,37 @@
+[project]
+name = "brain-harness-workspace"
+version = "0.1.0"
+requires-python = ">=3.12"
+description = "Workspace root: okf (format library) and brain-harness (agentic search)."
+
+[tool.uv.workspace]
+members = ["packages/okf", "packages/harness"]
+
+[tool.uv.sources]
+okf = { workspace = true }
+brain-harness = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-PyYAML",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["packages/okf/tests", "packages/harness/tests", "evals/tests"]
+pythonpath = ["packages/okf/src", "packages/harness/src", "."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+packages = ["okf", "brain_harness"]

@@ -1,0 +1,21 @@
+# Hard caps per tool call and per run. Enforced in code, not in the prompt.
+caps:
+  grep_matches: 100
+  glob_paths: 100
+  list_entries: 200
+  read_lines: 2000
+  read_line_chars: 2000
+  link_edges: 100
+  search_pages: 20
+  tool_output_tokens: 10000
+budgets:
+  max_requests: 40
+  max_tool_calls: 150
+  max_total_tokens: 400000
+  max_cost_usd: 2.0
+  repeat_call_limit: 3
+  collapse_after_turns: 3
+  compact_at_fraction: 0.7
+  max_parallel_searchers: 6
+  context_window_tokens: 200000
+  model_retries: 2

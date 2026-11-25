@@ -1,0 +1,17 @@
+# Copy to config/roles.yaml (gitignored) and set real model ids, or set
+# BRAIN_PLANNER_MODEL / BRAIN_SEARCHER_MODEL / BRAIN_WRITER_MODEL / BRAIN_JUDGE_MODEL.
+#
+# Format: provider:model-id, as Pydantic AI reads it. Examples of providers:
+#   anthropic:   azure:   openai:   google-gla:   bedrock:   ollama:
+# To use one gateway for every provider, run a LiteLLM proxy, set
+# OPENAI_BASE_URL to it, and use openai:<proxy model alias> everywhere.
+roles:
+  planner:
+    model: anthropic:YOUR-STRONG-MODEL
+    fallbacks: [azure:YOUR-FALLBACK-DEPLOYMENT]
+  searcher:
+    model: anthropic:YOUR-FAST-MODEL
+  writer:
+    model: anthropic:YOUR-STRONG-MODEL
+  judge:
+    model: openai:YOUR-JUDGE-MODEL   # a different family from the planner avoids self-preference
