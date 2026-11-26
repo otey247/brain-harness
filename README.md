@@ -29,8 +29,9 @@ docs/adr/            decisions behind the design
 
 ```bash
 uv sync --all-packages --group dev            # add --all-extras for api, otel, vectors, write
-cp config/roles.example.yaml config/roles.yaml # set real model ids, or use BRAIN_*_MODEL env vars
+cp config/roles.example.yaml config/roles.yaml # set real model ids, or use BRAIN_MODEL / BRAIN_*_MODEL
 cp .env.example .env                           # provider keys
+uv run brain models                            # each role's model, and any missing key
 
 uv run okf validate bundles/example --strict
 uv run brain tools grep "grep first"           # one primitive, no model
@@ -40,6 +41,24 @@ uv run brain serve                             # HTTP API (api extra)
 uv run brain eval                              # golden set -> .brain/evals
 uv run pytest -q
 ```
+
+## Using Claude
+
+Claude works through Anthropic's API with no extra install (the `anthropic` provider ships with the harness).
+
+```bash
+export ANTHROPIC_API_KEY=...                   # in your shell or .env, never in a committed file
+uv run brain smoke --model claude:<model id>   # one real question, with tokens, cache hits and cost
+BRAIN_MODEL=claude:<model id> uv run brain ask "What did we decide about retrieval?"
+```
+
+- `claude:` is the same as `anthropic:`, in model strings and in a bundle's `allowed_providers`.
+- Prompt caching is on by default for Claude. A search loop resends the same instructions and tool schemas on every turn, so the harness caches them and the growing conversation; each turn pays full price only for what is new. Set `models.prompt_cache` to `"1h"` or `false` in `roles.yaml`.
+- Per-role provider settings pass through unchanged, for example `settings: {max_tokens: 4000}`; Anthropic-only keys start with `anthropic_` and other providers in a fallback chain ignore them.
+- Claude on Bedrock goes through the `bedrock:` provider; the caching defaults above apply to Anthropic's API only.
+- Every run logs requests, tokens, cache reads and writes, and cost (from Pydantic AI's price table) to `.brain/runs`.
+
+The `live-smoke` GitHub workflow runs the same check by hand: add the `ANTHROPIC_API_KEY` repository secret, then run the workflow with a model. Locally, `BRAIN_LIVE_MODEL=claude:<model id> uv run pytest -m live` does the same through pytest.
 
 Point it at your own notes with `BRAIN_BUNDLE=/path/to/bundle` or an entry in `config/bundles.yaml`.
 
@@ -76,7 +95,8 @@ Tools: `ask` (full loop, cited answer), `grep`, `read`, `list`, `links`, `frontm
 | Local FTS index | Done, tested; off by default |
 | Citation check, guards | Done, tested |
 | MCP server | Done, tested (read tools) |
-| Agent loop, subagents, compaction | Written; test runs with Pydantic AI's `TestModel` once deps are installed |
+| Agent loop, subagents, compaction | Done, tested with Pydantic AI's `TestModel` |
+| Claude models, prompt caching, cost tracking | Done, tested offline; live smoke test is opt-in |
 | Proposals on git branches | Written; tests need the `write` extra |
 | Evals | Scorers and runner done; golden set has 5 starter items |
 | Vectors, ingestion, judge | Phase 3-5 (see the design doc) |

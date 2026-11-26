@@ -31,7 +31,8 @@ from brain_harness.agent.output import Answer, SearchReport
 from brain_harness.agent.prompts import SEARCHER, planner_prompt
 from brain_harness.config import BundleConfig, Settings
 from brain_harness.index.sqlite_index import SqliteIndex
-from brain_harness.models.registry import resolve
+from brain_harness.models.registry import model_settings, resolve
+from brain_harness.observability.cost import messages_cost
 from brain_harness.observability.runlog import RunLog, RunRecord
 from brain_harness.tools.knowledge import KnowledgeTools, ToolError
 
@@ -136,6 +137,7 @@ class Harness:
 
             agent = Agent(
                 resolve(self.settings, "searcher", self.bundle_cfg),
+                model_settings=model_settings(self.settings, "searcher") or None,
                 deps_type=Deps,
                 output_type=SearchReport,
                 instructions=SEARCHER,
@@ -154,6 +156,7 @@ class Harness:
             budgets = self.settings.budgets
             agent = Agent(
                 resolve(self.settings, "planner", self.bundle_cfg),
+                model_settings=model_settings(self.settings, "planner") or None,
                 deps_type=Deps,
                 output_type=Answer,
                 instructions=planner_prompt(budgets.max_parallel_searchers, self.bundle.description),
@@ -174,6 +177,8 @@ class Harness:
                 child = Deps(tools=deps.tools, guard=deps.guard, semaphore=deps.semaphore, depth=deps.depth + 1)
                 async with deps.semaphore:
                     result = await searcher.run(sub_question, deps=child, usage=ctx.usage)
+                # Searcher spend counts against the run's cost budget as it happens.
+                deps.guard.add_cost(messages_cost(result.all_messages()).usd)
                 report: SearchReport = result.output
                 deps.reports.append(report)
                 return report.model_dump_json(indent=1)
@@ -206,11 +211,17 @@ class Harness:
             result = await self.planner().run(question, deps=deps, usage_limits=limits)
             checked, report = verify_answer(self.bundle, result.output, self.now)
             usage = result.usage
+            planner_cost = messages_cost(result.all_messages())
+            guard.cost_usd += planner_cost.usd
             record.usage = {
                 "requests": usage.requests,
                 "input_tokens": usage.input_tokens,
                 "output_tokens": usage.output_tokens,
+                "cache_read_tokens": usage.cache_read_tokens,
+                "cache_write_tokens": usage.cache_write_tokens,
                 "tool_calls": usage.tool_calls,
+                "cost_usd": round(guard.cost_usd, 6),
+                "unpriced_responses": planner_cost.unpriced,
             }
             record.answer = checked.model_dump()
             record.citation_validity = report.validity

@@ -1,0 +1,38 @@
+name: live-smoke
+
+# Manual only: asks the example bundle one question with a real model and fails
+# unless the answer comes back with verified citations. Costs a few cents per run.
+# Needs the repository secret for the provider you pick (ANTHROPIC_API_KEY for claude:).
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Model for every role, e.g. claude:<model id> or openai:<model id>"
+        required: true
+        type: string
+
+concurrency:
+  group: live-smoke
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: sudo apt-get install -y ripgrep
+      - run: uv sync --all-packages --group dev
+      - name: Smoke test
+        env:
+          BRAIN_MODEL: ${{ inputs.model }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: uv run brain smoke

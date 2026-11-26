@@ -22,6 +22,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["packages/okf/tests", "packages/harness/tests", "evals/tests"]
 pythonpath = ["packages/okf/src", "packages/harness/src", "."]
+markers = ["live: calls a real model API; opt in with BRAIN_LIVE_MODEL (see packages/harness/tests/live)"]
 
 [tool.ruff]
 line-length = 120

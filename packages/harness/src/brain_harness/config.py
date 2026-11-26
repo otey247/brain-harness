@@ -9,22 +9,33 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, Field
 
 
+ROLE_NAMES = ("planner", "searcher", "writer", "judge")
+
+
 class RoleModel(BaseModel):
-    """A role's model plus optional fallbacks, as provider:model strings."""
+    """A role's model plus optional fallbacks, as provider:model strings.
+
+    ``settings`` passes provider model settings through unchanged, for example
+    ``{"max_tokens": 8000}`` or ``{"anthropic_thinking": {"type": "enabled", "budget_tokens": 4000}}``.
+    Provider-specific keys carry their provider's prefix, so other providers in a
+    fallback chain ignore them.
+    """
 
     model: str
     fallbacks: list[str] = Field(default_factory=list)
+    settings: dict[str, Any] = Field(default_factory=dict)
 
 
 class Roles(BaseModel):
     planner: RoleModel
-    searcher: RoleModel
+    # Unset roles use the planner's model.
+    searcher: RoleModel | None = None
     writer: RoleModel | None = None
     judge: RoleModel | None = None
 
@@ -67,10 +78,20 @@ class BundleConfig(BaseModel):
     writes_enabled: bool = False
 
 
+class ModelDefaults(BaseModel):
+    """Settings that apply to every role, by provider."""
+
+    # Prompt caching for Claude models: the system prompt and tool schemas repeat
+    # on every turn of a search loop, so caching them cuts input cost and latency.
+    # False turns it off; "1h" keeps the cache longer for bursty use.
+    prompt_cache: Literal[False, "5m", "1h"] = "5m"
+
+
 class Settings(BaseModel):
     bundles: dict[str, BundleConfig]
     default_bundle: str
     roles: Roles | None = None
+    models: ModelDefaults = Field(default_factory=ModelDefaults)
     caps: Caps = Field(default_factory=Caps)
     budgets: Budgets = Field(default_factory=Budgets)
     scratch_dir: Path = Path(".brain/scratch")
@@ -97,15 +118,18 @@ def load_settings(config_dir: str | os.PathLike[str] | None = None) -> Settings:
     """Merge ``bundles.yaml``, ``roles.yaml`` and ``budgets.yaml`` from ``config_dir``.
 
     Environment overrides: ``BRAIN_BUNDLE`` (path of a single default bundle),
-    ``BRAIN_PLANNER_MODEL``, ``BRAIN_SEARCHER_MODEL``, ``BRAIN_WRITER_MODEL``,
-    ``BRAIN_JUDGE_MODEL``.
+    ``BRAIN_MODEL`` (one model for every role, e.g. ``claude:<model id>``), then
+    ``BRAIN_PLANNER_MODEL``, ``BRAIN_SEARCHER_MODEL``, ``BRAIN_WRITER_MODEL`` and
+    ``BRAIN_JUDGE_MODEL``, which win over ``BRAIN_MODEL`` for their role.
     """
     base = Path(config_dir or os.environ.get("BRAIN_CONFIG_DIR", "config"))
     data: dict[str, Any] = {}
     data.update(_read_yaml(base / "bundles.yaml"))
     roles = _read_yaml(base / "roles.yaml")
     if roles:
-        data["roles"] = roles.get("roles", roles)
+        if "models" in roles:
+            data["models"] = roles["models"]
+        data["roles"] = roles.get("roles", {k: v for k, v in roles.items() if k != "models"})
     budgets = _read_yaml(base / "budgets.yaml")
     if budgets:
         data["caps"] = budgets.get("caps", {})
@@ -115,15 +139,22 @@ def load_settings(config_dir: str | os.PathLike[str] | None = None) -> Settings:
         data["bundles"] = {"default": {"path": env_bundle}}
         data["default_bundle"] = "default"
 
-    env_roles = {
-        role: os.environ[f"BRAIN_{role.upper()}_MODEL"]
-        for role in ("planner", "searcher", "writer", "judge")
-        if os.environ.get(f"BRAIN_{role.upper()}_MODEL")
-    }
+    env_roles: dict[str, str] = {}
+    if every := os.environ.get("BRAIN_MODEL"):
+        env_roles = {role: every for role in ROLE_NAMES}
+    env_roles.update(
+        {
+            role: os.environ[f"BRAIN_{role.upper()}_MODEL"]
+            for role in ROLE_NAMES
+            if os.environ.get(f"BRAIN_{role.upper()}_MODEL")
+        }
+    )
     if env_roles:
         merged = dict(data.get("roles") or {})
         for role, model in env_roles.items():
-            merged[role] = {"model": model}
+            # Keep the role's other settings from roles.yaml; swap only the model.
+            kept = merged.get(role) if isinstance(merged.get(role), dict) else {}
+            merged[role] = {**kept, "model": model, "fallbacks": []}
         data["roles"] = merged
 
     if "bundles" not in data:

@@ -11,3 +11,5 @@ build/
 config/roles.yaml
 .env
 .env.*
+
+!.env.example
