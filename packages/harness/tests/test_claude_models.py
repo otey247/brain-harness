@@ -39,13 +39,13 @@ def test_resolve_returns_anthropic_string_for_claude_alias(settings):
 def test_prompt_cache_on_by_default_for_claude(settings):
     settings.roles = Roles.model_validate({"planner": {"model": "claude:m"}, "searcher": {"model": "openai:m"}})
     planner = model_settings(settings, "planner")
-    assert CACHE_KEYS <= planner.keys() and planner["anthropic_cache"] == "5m"
+    assert planner.keys() >= CACHE_KEYS and planner["anthropic_cache"] == "5m"
     assert not CACHE_KEYS & model_settings(settings, "searcher").keys()
 
 
 def test_prompt_cache_applies_when_claude_is_a_fallback(settings):
     settings.roles = Roles.model_validate({"planner": {"model": "openai:m", "fallbacks": ["claude:m"]}})
-    assert CACHE_KEYS <= model_settings(settings, "planner").keys()
+    assert model_settings(settings, "planner").keys() >= CACHE_KEYS
 
 
 def test_prompt_cache_can_be_turned_off_or_lengthened(settings):
@@ -114,7 +114,7 @@ def test_agents_get_claude_settings(settings, monkeypatch):
     settings.roles = Roles.model_validate({"planner": {"model": "claude:m"}})
     harness = Harness(settings)
     for agent in (harness.planner(), harness.searcher()):
-        assert CACHE_KEYS <= dict(agent.model_settings or {}).keys()
+        assert dict(agent.model_settings or {}).keys() >= CACHE_KEYS
 
 
 def test_brain_models_command_flags_a_missing_key(monkeypatch, capsys):
