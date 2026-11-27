@@ -12,6 +12,7 @@ okf = { workspace = true }
 brain-harness = { workspace = true }
 
 [dependency-groups]
+wheel-build = ["hatchling==1.33.0"]
 dev = [
     "pytest>=8",
     "ruff>=0.8",

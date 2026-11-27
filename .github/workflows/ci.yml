@@ -18,11 +18,17 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+          version: "0.13.9"
       - run: sudo apt-get install -y ripgrep
-      - run: uv sync --all-packages --all-extras --group dev
+      - run: uv sync --locked --all-packages --all-extras --group dev
       - run: uv run ruff check .
       - run: uv run pytest -q
       - run: uv run okf validate bundles/example --strict
+      - run: python distribution/cited-search/build.py
+      - run: python distribution/cited-search/verify.py dist/cited-search-*.zip
