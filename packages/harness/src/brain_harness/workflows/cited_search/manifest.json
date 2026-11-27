@@ -1,0 +1,21 @@
+{
+  "manifest_version": 1,
+  "id": "cited-search",
+  "version": "0.1.0",
+  "entrypoint": "cited-search",
+  "runtime": {"python": ">=3.12", "packages": {"brain-harness": "0.1.0", "okf": "0.1.0"}},
+  "commands": {
+    "smoke": {"input": "fixed synthetic question", "model": "scripted, local", "network": false},
+    "ask": {"input": "one nonblank question", "requires": ["--live", "--allow-provider"], "network": true},
+    "schema": {"output": "JSON Schema for Answer"},
+    "manifest": {"output": "this document"}
+  },
+  "answer_type": "brain_harness.agent.output.Answer",
+  "sample_bundle": "bundle",
+  "permissions": {
+    "read": "one trusted OKF directory, defaulting to the installed synthetic bundle",
+    "write": "temporary scratch and run log, or explicit --log-dir for retained logs",
+    "providers": ["anthropic", "openai"],
+    "listener": false
+  }
+}

@@ -25,6 +25,10 @@ config/              bundles, roles (example), budgets
 docs/adr/            decisions behind the design
 ```
 
+## Install the standalone cited-search workflow
+
+The [cited-search distribution](distribution/cited-search/README.md) builds a versioned, offline-installable Python wheel kit. Consumers can run `cited-search smoke` against a fictional dispatch procedure or explicitly select a live provider and ask a question about their own bundle. The kit includes its input/output contract and runs as a local process.
+
 ## Quick start
 
 ```bash

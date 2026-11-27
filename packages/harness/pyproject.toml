@@ -25,6 +25,7 @@ vectors = ["sqlite-vec>=0.1.6"]
 write = ["okf[write]"]
 
 [project.scripts]
+cited-search = "brain_harness.workflows.cited_search.cli:main"
 brain = "brain_harness.apps.cli:main"
 
 [tool.hatch.build.targets.wheel]
